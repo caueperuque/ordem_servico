@@ -1,6 +1,7 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import { InfoPecasServicos } from "./components/InfoPecasServicos";
 import { OrdemServicoContainer } from "./styles";
+import { InputData } from "./components/Data";
 
 export const OrdemServico = () => {
   type Inputs = {
@@ -48,15 +49,17 @@ export const OrdemServico = () => {
     <OrdemServicoContainer>
       <h1>Nova ordem de serviço</h1>
       <form onSubmit={handleSubmit(onSubmit)}>
+        <InputData>
+        </InputData>
         {/* register your input into the hook by invoking the "register" function */}
-        <input defaultValue="test" {...register("example")} />
+        {/* <input defaultValue="test" {...register("example")} /> */}
 
         {/* include validation with required or other standard HTML validation rules */}
-        <input {...register("exampleRequired", { required: true })} />
+        {/* <input {...register("exampleRequired", { required: true })} /> */}
         {/* errors will return when field validation fails  */}
         {errors.exampleRequired && <span>This field is required</span>}
 
-        <input type="submit" />
+        {/* <input type="submit" /> */}
         <InfoPecasServicos />
       </form>
     </OrdemServicoContainer>
