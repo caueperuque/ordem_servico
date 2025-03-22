@@ -1,7 +1,8 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import { InfoPecasServicos } from "./components/InfoPecasServicos";
-import { OrdemServicoContainer } from "./styles";
+import { OrdemServicoContainer, Separator } from "./styles";
 import { InputData } from "./components/Data";
+import { InfoVeiculo } from "./components/InfoVeiculo";
 
 export const OrdemServico = () => {
   type Inputs = {
@@ -9,7 +10,7 @@ export const OrdemServico = () => {
     exampleRequired: string;
   };
   const {
-    register,
+    // register,
     handleSubmit,
     watch,
     formState: { errors },
@@ -48,9 +49,11 @@ export const OrdemServico = () => {
     /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
     <OrdemServicoContainer>
       <h1>Nova ordem de serviço</h1>
+      <Separator />
       <form onSubmit={handleSubmit(onSubmit)}>
-        <InputData>
-        </InputData>
+        <InputData />
+        <Separator />
+        <InfoVeiculo />
         {/* register your input into the hook by invoking the "register" function */}
         {/* <input defaultValue="test" {...register("example")} /> */}
 
