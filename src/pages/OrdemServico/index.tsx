@@ -1,6 +1,8 @@
 import { SubmitHandler, useForm } from "react-hook-form";
+import { InfoPecasServicos } from "./components/InfoPecasServicos";
+import { OrdemServicoContainer } from "./styles";
 
-const FormOrdemServico = () => {
+export const OrdemServico = () => {
   type Inputs = {
     example: string;
     exampleRequired: string;
@@ -43,18 +45,20 @@ const FormOrdemServico = () => {
 
   return (
     /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
-    <form onSubmit={handleSubmit(onSubmit)}>
-      {/* register your input into the hook by invoking the "register" function */}
-      <input defaultValue="test" {...register("example")} />
+    <OrdemServicoContainer>
+      <h1>Nova ordem de serviço</h1>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        {/* register your input into the hook by invoking the "register" function */}
+        <input defaultValue="test" {...register("example")} />
 
-      {/* include validation with required or other standard HTML validation rules */}
-      <input {...register("exampleRequired", { required: true })} />
-      {/* errors will return when field validation fails  */}
-      {errors.exampleRequired && <span>This field is required</span>}
+        {/* include validation with required or other standard HTML validation rules */}
+        <input {...register("exampleRequired", { required: true })} />
+        {/* errors will return when field validation fails  */}
+        {errors.exampleRequired && <span>This field is required</span>}
 
-      <input type="submit" />
-    </form>
+        <input type="submit" />
+        <InfoPecasServicos />
+      </form>
+    </OrdemServicoContainer>
   );
 };
-
-export default FormOrdemServico;
