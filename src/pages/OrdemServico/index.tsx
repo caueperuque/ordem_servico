@@ -3,6 +3,7 @@ import { InfoPecasServicos } from "./components/InfoPecasServicos";
 import { OrdemServicoContainer, Separator } from "./styles";
 import { InputData } from "./components/Data";
 import { InfoVeiculo } from "./components/InfoVeiculo";
+import { InfoCliente } from "./components/InfoCliente";
 
 export const OrdemServico = () => {
   type Inputs = {
@@ -54,6 +55,8 @@ export const OrdemServico = () => {
         <InputData />
         <Separator />
         <InfoVeiculo />
+        <Separator />
+        <InfoCliente />
         {/* register your input into the hook by invoking the "register" function */}
         {/* <input defaultValue="test" {...register("example")} /> */}
 

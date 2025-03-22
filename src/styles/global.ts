@@ -40,4 +40,21 @@ export const GlobalStyle = createGlobalStyle`
     font-weight: 400;
     font-size: 1rem;
   }
+
+  h3 {
+    text-align: center
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+  }
 `;
