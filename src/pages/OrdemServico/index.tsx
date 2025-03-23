@@ -57,6 +57,7 @@ export const OrdemServico = () => {
         <InfoVeiculo />
         <Separator />
         <InfoCliente />
+        <Separator />
         {/* register your input into the hook by invoking the "register" function */}
         {/* <input defaultValue="test" {...register("example")} /> */}
 

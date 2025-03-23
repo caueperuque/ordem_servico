@@ -27,10 +27,11 @@ export const GlobalStyle = createGlobalStyle`
     padding: 0.4rem;
     border: none;
     border-radius: 0.3rem;
+    width: 100%;
   }
 
   .container {
-    max-width: 800px;
+    /* max-width: 800px; */
     margin: 0 auto;
     padding: 20px;
   }
@@ -53,8 +54,11 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   .row {
+    /* border: solid 3px red; */
     display: flex;
     align-items: flex-start;
+    justify-content: space-between;
+    /* width: 100%; */
     gap: 2rem;
   }
 `;

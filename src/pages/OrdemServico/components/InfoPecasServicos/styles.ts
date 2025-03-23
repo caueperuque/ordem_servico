@@ -1,8 +1,7 @@
 import styled from "styled-components";
 
 export const InfoPecasServicosContainer = styled.div`
-    h1 {
-        color: ${props => props.theme['gray-100']};
-        text-align: center;
-    }
-`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
