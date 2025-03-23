@@ -29,9 +29,6 @@ export const InfoVeiculo = () => {
           <label htmlFor="">Ano:</label>
           <input type="number" placeholder="Ano" />
         </div>
-      </div>
-
-      <div className="row">
         <div className="input-group">
           <label htmlFor="">Motor:</label>
           <input type="text" placeholder="Motor" />
@@ -41,6 +38,8 @@ export const InfoVeiculo = () => {
           <input type="text" placeholder="Placa" />
         </div>
       </div>
+
+      {/* <div className="row"></div> */}
     </InputsInfoVeiculoContainer>
   );
 };
