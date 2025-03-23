@@ -18,11 +18,14 @@ export const InfoPecasServicosContainer = styled.div`
   }
 
   .row th {
-    /* background-color: #f9f9f9; */
     font-weight: 600;
     font-size: 0.9rem;
     text-align: center;
-    /* color: #555; */
+  }
+
+  .row th:nth-child(3),
+  .row td:nth-child(3) {
+    width: 35%;
   }
 
   .row input,
