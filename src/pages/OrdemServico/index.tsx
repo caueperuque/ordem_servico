@@ -9,14 +9,7 @@ import {
 } from "./styles";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Car,
-  Database,
-  Trash,
-  User,
-  Wrench,
-  Check,
-} from "phosphor-react";
+import { Car, Database, Trash, User, Wrench, Check } from "phosphor-react";
 import { toast, Toaster } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import { consultarCep } from "../../helpers/functions";
@@ -308,7 +301,7 @@ export const OrdemServico = () => {
         head: [["Qtde", "Código", "Descrição", "Valor Unitário", "Total"]],
         body: pecasAdicionadas.map((item) => [
           item.qtde,
-          item.cod || '-',
+          item.cod || "-",
           item.descricao,
           `R$ ${Number(item.valorUnit).toFixed(2)}`,
           `R$ ${Number(item.total).toFixed(2)}`,
@@ -357,8 +350,7 @@ export const OrdemServico = () => {
 
   const handleInclude = useCallback(
     (index: number) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const item = watch(`pecasServicos.${index}`);
+      watch(`pecasServicos.${index}`);
 
       // Validações permanecem iguais...
 
@@ -609,6 +601,7 @@ export const OrdemServico = () => {
             <h3>Produtos / serviços</h3>
             <Wrench size={20} />
           </header>
+
           <div className="row">
             <table>
               <thead>
@@ -741,6 +734,7 @@ export const OrdemServico = () => {
               </tbody>
             </table>
           </div>
+
           <div style={{ textAlign: "center" }}>
             <button
               type="button"
@@ -763,14 +757,25 @@ export const OrdemServico = () => {
               textAlign: "right",
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
               gap: "1rem",
             }}
           >
-            <h1>Total Geral:</h1>
-            <h1>R$ {Number(totalGeral).toFixed(2)}</h1>
+            <h2>Total Geral: R$ {Number(totalGeral).toFixed(2)}</h2>
+            <button
+              type="submit"
+              style={{
+                border: "none",
+                backgroundColor: "#00aaff",
+                color: "white",
+                padding: "1rem",
+                borderRadius: "5px",
+              }}
+            >
+              Gerar PDF
+            </button>
           </div>
         </InfoPecasServicosContainer>
-        <button type="submit">Gerar PDF</button>
       </form>
     </OrdemServicoContainer>
   );
