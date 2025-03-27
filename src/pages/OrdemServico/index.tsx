@@ -185,7 +185,7 @@ export const OrdemServico = () => {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString("pt-BR");
+      return new Date(dateString).toLocaleDateString("pt-BR", {timeZone: 'UTC'});
     } catch {
       return "Data inválida";
     }
