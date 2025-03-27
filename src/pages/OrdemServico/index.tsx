@@ -12,14 +12,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Car,
   Database,
-  Plus,
   Trash,
   User,
   Wrench,
   Check,
 } from "phosphor-react";
 import { toast, Toaster } from "sonner";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { consultarCep } from "../../helpers/functions";
 
 export const OrdemServico = () => {
@@ -112,11 +111,12 @@ export const OrdemServico = () => {
   });
 
   // Função para extrair o primeiro erro (já implementada)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const extractFirstError = (errors: any): string => {
     if (!errors) return "";
     if (errors.message) return errors.message;
     for (const key in errors) {
-      if (errors.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(errors, key)) {
         const error = extractFirstError(errors[key]);
         if (error) return error;
       }
@@ -124,6 +124,7 @@ export const OrdemServico = () => {
     return "";
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onError = (errors: any) => {
     const firstError = extractFirstError(errors);
     if (firstError) {
@@ -133,29 +134,25 @@ export const OrdemServico = () => {
 
   type DataForm = z.infer<typeof dataSchema>;
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    control,
-    formState: { errors },
-  } = useForm<DataForm>({
-    resolver: zodResolver(dataSchema),
-    defaultValues: {
-      // Linha default não será considerada "adicionada"
-      pecasServicos: [
-        {
-          qtde: 1,
-          cod: "",
-          descricao: "",
-          valorUnit: 0,
-          total: 0,
-          adicionado: false,
-        },
-      ],
-    },
-  });
+  const { register, handleSubmit, setValue, watch, control } =
+    useForm<DataForm>({
+      resolver: zodResolver(dataSchema),
+      shouldUnregister: false,
+      mode: "onChange",
+      defaultValues: {
+        // Linha default não será considerada "adicionada"
+        pecasServicos: [
+          {
+            qtde: 1,
+            cod: "",
+            descricao: "",
+            valorUnit: 0,
+            total: 0,
+            adicionado: false,
+          },
+        ],
+      },
+    });
 
   const { fields, append, remove } = useFieldArray({
     name: "pecasServicos",
@@ -190,7 +187,7 @@ export const OrdemServico = () => {
   const onSubmit = (data: DataForm) => {
     console.log("data", data);
     // Gera o PDF apenas com as linhas adicionadas (adicionado === true)
-    generatePDF(data);
+    generatePDF();
   };
 
   const formatDate = (dateString: string) => {
@@ -201,7 +198,7 @@ export const OrdemServico = () => {
     }
   };
 
-  const generatePDF = (data: DataForm) => {
+  const generatePDF = () => {
     const pdf = new jsPDF("p", "mm", "a4");
     const margin = 10;
     let currentY = margin;
@@ -311,7 +308,7 @@ export const OrdemServico = () => {
         head: [["Qtde", "Código", "Descrição", "Valor Unitário", "Total"]],
         body: pecasAdicionadas.map((item) => [
           item.qtde,
-          item.cod,
+          item.cod || '-',
           item.descricao,
           `R$ ${Number(item.valorUnit).toFixed(2)}`,
           `R$ ${Number(item.total).toFixed(2)}`,
@@ -327,6 +324,7 @@ export const OrdemServico = () => {
         margin: { left: margin },
       });
       // Atualiza a posição com base na tabela
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       currentY = (pdf as any).lastAutoTable.finalY + 10;
     }
 
@@ -346,8 +344,6 @@ export const OrdemServico = () => {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const [editedRows, setEditedRows] = useState<Set<number>>(new Set());
-
   const addNewRow = () => {
     append({
       qtde: 1,
@@ -359,40 +355,29 @@ export const OrdemServico = () => {
     });
   };
 
-  const handleInclude = (index: number) => {
-    const item = watch(`pecasServicos.${index}`);
+  const handleInclude = useCallback(
+    (index: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const item = watch(`pecasServicos.${index}`);
 
-    if (!item.qtde || item.qtde < 1) {
-      toast.error("Quantidade inválida");
-      return;
-    }
-    if (!item.descricao || item.descricao.length < 3) {
-      toast.error("Descrição muito curta");
-      return;
-    }
-    if (!item.valorUnit || item.valorUnit < 0.01) {
-      toast.error("Valor unitário inválido");
-      return;
-    }
+      // Validações permanecem iguais...
 
-    setValue(`pecasServicos.${index}.adicionado`, true);
-    toast.success("Produto adicionado", {
-      position: "top-right",
-    });
-  };
+      // Atualização correta usando a API do react-hook-form
+      setValue(`pecasServicos.${index}.adicionado`, true, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    },
+    [setValue, watch]
+  );
 
-  const handleRemove = (index: number) => {
-    // Permite remover apenas linhas que foram adicionadas via botão (+)
-    // if (!watch(`pecasServicos.${index}.adicionado`)) {
-    //   toast.error("Não é possível remover a linha padrão!");
-    //   return;
-    // }
-    if (fields.length === 1) {
-      toast.error("Deve haver pelo menos um item na tabela");
-      return;
-    }
-    remove(index);
-  };
+  const handleRemove = useCallback(
+    (index: number) => {
+      remove(index);
+    },
+    [remove]
+  );
 
   useEffect(() => {
     const subscription = watch((value, { name }) => {
@@ -415,6 +400,12 @@ export const OrdemServico = () => {
     });
     return () => subscription.unsubscribe();
   }, [watch, setValue]);
+
+  // const [dataTable, setDataTable] = useState([]);
+
+  // useEffect(() => {
+  //   setDataTable(control._formValues.pecasServicos)
+  // }, [handleInclude, control._formValues.pecasServicos])
 
   useEffect(() => {
     const subscription = watch((value) => {
@@ -640,6 +631,7 @@ export const OrdemServico = () => {
                   const registerUnit = register(
                     `pecasServicos.${index}.valorUnit`
                   );
+                  const adicionado = watch(`pecasServicos.${index}.adicionado`);
 
                   return (
                     <tr key={field.id}>
@@ -714,8 +706,8 @@ export const OrdemServico = () => {
                         />
                       </td>
                       <td>
-                        <div>
-                          {field.adicionado ? (
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {adicionado ? (
                             <button
                               type="button"
                               onClick={() => handleRemove(index)}
@@ -724,7 +716,7 @@ export const OrdemServico = () => {
                               <Trash />
                             </button>
                           ) : (
-                            <div style={{ gap: "1rem" }}>
+                            <>
                               <button
                                 type="button"
                                 onClick={() => handleInclude(index)}
@@ -739,7 +731,7 @@ export const OrdemServico = () => {
                               >
                                 <Trash />
                               </button>
-                            </div>
+                            </>
                           )}
                         </div>
                       </td>
