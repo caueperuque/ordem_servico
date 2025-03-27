@@ -17,6 +17,15 @@ export const InfoPecasServicosContainer = styled.div`
     border-bottom: 1px solid #eee;
   }
 
+  .row td {
+    :disabled {
+      background-color: ${props => props.theme['gray-400']};
+      color: ${props => props.theme['gray-300']};
+      cursor: not-allowed;
+      border-color: ${props => props.theme['gray-400']};
+    }
+  }
+
   .row th {
     font-weight: 600;
     font-size: 0.9rem;
@@ -26,6 +35,13 @@ export const InfoPecasServicosContainer = styled.div`
   .row th:nth-child(3),
   .row td:nth-child(3) {
     width: 35%;
+  }
+
+  .row th:last-child,
+  .row td:last-child {
+    div {
+      display: flex;
+    }
   }
 
   .row input,
@@ -56,5 +72,13 @@ export const InfoPecasServicosContainer = styled.div`
 
   .row button:hover {
     background-color: #0056b3;
+  }
+
+  #btn-edit {
+    background-color: #0056b3;
+  }
+
+  #btn-remover {
+    background-color: #E61919;
   }
 `;
