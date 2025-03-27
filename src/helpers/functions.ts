@@ -4,6 +4,7 @@ interface ResultConsultarCep {
   bairro: string
   uf: string
   localidade: string
+  erro?: string
 }
 
 export const consultarCep = async (cep: string): Promise<ResultConsultarCep> => {

@@ -1,4 +1,4 @@
-import { SubmitHandler, useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -10,13 +10,14 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Car, Database, Plus, Trash, User, Wrench } from "phosphor-react";
-import { Toaster } from "sonner";
-import { useState } from "react";
+import { toast, Toaster } from "sonner";
+import { useEffect, useMemo, useState } from "react";
+import { consultarCep } from "../../helpers/functions";
 
 export const OrdemServico = () => {
   const dataSchema = z.object({
-    data_entrada: z.string(),
-    data_saida: z.string(),
+    data_entrada: z.string().date(),
+    data_saida: z.string().date(),
     nome: z.string().min(3).max(100),
     cpf_cnpj: z.string().min(11).max(11),
     rg_inscricao: z.string().min(9).max(9),
@@ -31,41 +32,76 @@ export const OrdemServico = () => {
     ano: z.string().min(4).max(4),
     motor: z.string().min(3).max(100),
     placa: z.string().min(7).max(7),
-    km: z.number(),
+    km: z.coerce
+      .number({
+        invalid_type_error: "KM deve ser um número válido",
+      })
+      .min(1, "O campo KM não pode ser zero")
+      .max(999999, "KM máximo é 999.999"),
+    pecasServicos: z
+      .object({
+        qtde: z.coerce.number().min(1, "Quantidade mínima é 1"),
+        cod: z.string().min(3, "Código deve ter pelo menos 3 caracteres"),
+        descricao: z.string().min(3, "Descrição muito curta"),
+        valorUnit: z.coerce.number().min(0.01, "Valor unitário inválido"),
+        total: z.coerce.number().min(0.01, "Total inválido"),
+      })
+      .array()
+      .nonempty("Adicione pelo menos um item"),
   });
 
-  const { register, handleSubmit } = useForm({
+  type DataForm = z.infer<typeof dataSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    control,
+    formState: { errors },
+  } = useForm<DataForm>({
     resolver: zodResolver(dataSchema),
+    defaultValues: {
+      pecasServicos: [
+        { qtde: 1, cod: "", descricao: "", valorUnit: 0, total: 0 },
+      ],
+    },
   });
 
-  type Inputs = {
-    data_entrada: string;
-    data_saida: string;
-    nome: string;
-    cpf: string;
-    rg: string;
-    cep: string;
-    cidade: string;
-    estado: string;
-    bairro: string;
-    numero: string;
-    endereco: string;
-    marca: string;
-    modelo: string;
-    ano: string;
-    motor: string;
-    placa: string;
-    pecasServicos: {
-      qtde: string;
-      cod: string;
-      descricao: string;
-      valorUnit: string;
-      total: string;
-    }[];
-  };
+  const { fields, append, remove } = useFieldArray({
+    name: "pecasServicos",
+    control,
+  });
 
-  const onSubmit: SubmitHandler<Inputs> = (data) => {
+  const [totalGeral, setTotalGeral] = useState(0);
+
+  const cepValue = watch("cep");
+
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (cepValue && cepValue.length === 8) {
+        try {
+          const dadosCep = await consultarCep(cepValue);
+          if (!dadosCep.erro) {
+            setValue("endereco", dadosCep.logradouro || "");
+            setValue("bairro", dadosCep.bairro || "");
+            setValue("cidade", dadosCep.localidade || "");
+            setValue("estado", dadosCep.uf || "");
+          } else {
+            console.error("CEP não encontrado.");
+          }
+        } catch (error) {
+          console.error("Erro ao consultar o CEP:", error);
+        }
+      }
+    };
+
+    fetchAddress();
+  }, [cepValue, setValue]);
+
+  const onSubmit = (data: DataForm) => {
     console.log("data", data);
+    console.log("errors", errors);
     generatePDF(data);
   };
 
@@ -77,7 +113,7 @@ export const OrdemServico = () => {
     }
   };
 
-  const generatePDF = (data: Inputs) => {
+  const generatePDF = (data: DataForm) => {
     const pdf = new jsPDF("p", "mm", "a4");
     const margin = 10;
     let currentY = margin;
@@ -123,8 +159,8 @@ export const OrdemServico = () => {
     pdf.setFontSize(12);
     const clientData = [
       `Nome: ${data.nome || "N/D"}`,
-      `CPF: ${data.cpf || "N/D"}`,
-      `RG: ${data.rg || "N/D"}`,
+      `CPF: ${data.cpf_cnpj || "N/D"}`,
+      `RG: ${data.rg_inscricao || "N/D"}`,
       `Endereço: ${data.endereco || "N/D"}, ${data.numero || "S/N"}`,
       `Bairro: ${data.bairro || "N/D"}`,
       `CEP: ${data.cep || "N/D"}`,
@@ -179,41 +215,110 @@ export const OrdemServico = () => {
       });
     }
 
+    const totalGeral = data.pecasServicos.reduce(
+      (acc, item) => acc + item.total,
+      0
+    );
+    pdf.setFontSize(14);
+    pdf.text(`Total: R$ ${totalGeral.toFixed(2)}`, margin, currentY + 10);
+
     pdf.save("ordem-servico.pdf");
   };
 
   const today = new Date().toISOString().split("T")[0];
 
-  const [rows, setRows] = useState<object[]>([]);
-
   const addNewRow = () => {
-    setRows((prev) => {
-      const allRows = prev;
-      allRows.push({
-        id: Date.now().toString(),
-        qtde: "",
+    if (validateBeforeAddRow()) {
+      append({
+        qtde: 0,
         cod: "",
         descricao: "",
-        valorUnit: "",
-        total: "",
+        valorUnit: 0,
+        total: 0,
       });
-
-      return rows;
-    });
+    }
   };
 
-  // Remove linha
+  const validateBeforeAddRow = (): boolean => {
+    const lastRowIndex = fields.length - 1;
+
+    // Verifica se todos os campos obrigatórios estão preenchidos
+    const validations = [
+      !!(
+        watch(`pecasServicos.${lastRowIndex}.qtde`) &&
+        watch(`pecasServicos.${lastRowIndex}.qtde`) >= 1
+      ),
+      !!watch(`pecasServicos.${lastRowIndex}.descricao`),
+      !!(
+        watch(`pecasServicos.${lastRowIndex}.valorUnit`) &&
+        watch(`pecasServicos.${lastRowIndex}.valorUnit`) >= 0.01
+      ),
+      !!(
+        watch(`pecasServicos.${lastRowIndex}.total`) &&
+        watch(`pecasServicos.${lastRowIndex}.total`) >= 0.01
+      ),
+    ];
+
+    // Se alguma validação falhou, mostra mensagem de erro
+    if (!validations.every(Boolean)) {
+      toast.error("Por favor, preencha todos os campos obrigatórios!");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleRemove = (index: number) => {
-    if (rows.length === 1) return;
-    const excludeRow = rows.filter((row) => row.id !== index);
-    setRows(excludeRow);
+    if (fields.length === 1) {
+      toast.error("Deve haver pelo menos um item na tabela");
+      return;
+    }
+    remove(index);
   };
+
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name && name.startsWith("pecasServicos")) {
+        const parts = name.split(".");
+        const index = Number(parts[1]);
+        const field = parts[2];
+
+        // Só calcula se for alteração em qtde ou valorUnit
+        if (field === "qtde" || field === "valorUnit") {
+          const qtde = value.pecasServicos?.[index]?.qtde || 0;
+          const valorUnit = value.pecasServicos?.[index]?.valorUnit || 0;
+          const newTotal = qtde * valorUnit;
+
+          // Só atualiza se o valor for diferente
+          if (value.pecasServicos?.[index]?.total !== newTotal) {
+            setValue(`pecasServicos.${index}.total`, newTotal);
+          }
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch, setValue]);
+
+
+  useEffect(() => {
+    const subscription = watch((value) => {
+      const total = value.pecasServicos?.reduce(
+        (acc, item) => acc + (item!.total || 0),
+        0
+      ) || 0;
+      setTotalGeral(total);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [watch]);
 
   return (
     <OrdemServicoContainer>
+      <Toaster richColors closeButton position="top-right" />
       <h1>Nova ordem de serviço</h1>
       <Separator />
-      <form>
+      <form onSubmit={handleSubmit(onSubmit)}>
         {/* Datas */}
         <InputContainer>
           <header>
@@ -307,6 +412,7 @@ export const OrdemServico = () => {
                 placeholder="Quilometragem atual"
                 id="km"
               />
+              {errors?.km && toast.warning(errors.km.message)}
             </div>
           </div>
         </InputContainer>
@@ -416,7 +522,6 @@ export const OrdemServico = () => {
         <Separator />
         {/* Tabela de peças e serviços */}
         <InfoPecasServicosContainer>
-          <Toaster richColors closeButton position="top-right" />
           <header>
             <h3>Produtos / serviços</h3>
             <Wrench size={20} />
@@ -435,7 +540,7 @@ export const OrdemServico = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((field, index) => (
+                {fields.map((field, index) => (
                   <tr key={field.id}>
                     <td>
                       <input
@@ -465,12 +570,11 @@ export const OrdemServico = () => {
                       <input
                         type="number"
                         {...register(`pecasServicos.${index}.total`)}
-                        readOnly
                       />
                     </td>
                     <td>
                       <div>
-                        {rows.length > 1 && (
+                        {fields.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemove(index)}
@@ -478,7 +582,7 @@ export const OrdemServico = () => {
                             <Trash />
                           </button>
                         )}
-                        {index === rows.length - 1 && (
+                        {index === fields.length - 1 && (
                           <button
                             type="button"
                             onClick={addNewRow}
@@ -493,6 +597,10 @@ export const OrdemServico = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="total-geral">
+            <label>Total Geral:</label>
+            <span>R$ {totalGeral.toFixed(2)}</span>
           </div>
         </InfoPecasServicosContainer>
         <button type="submit">Gerar PDF</button>
