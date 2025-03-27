@@ -177,9 +177,7 @@ export const OrdemServico = () => {
     fetchAddress();
   }, [cepValue, setValue]);
 
-  const onSubmit = (data: DataForm) => {
-    console.log("data", data);
-    // Gera o PDF apenas com as linhas adicionadas (adicionado === true)
+  const onSubmit = () => {
     generatePDF();
   };
 
