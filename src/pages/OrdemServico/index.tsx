@@ -9,29 +9,85 @@ import {
 } from "./styles";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Car, Database, Plus, Trash, User, Wrench } from "phosphor-react";
+import {
+  Car,
+  Database,
+  Plus,
+  Trash,
+  User,
+  Wrench,
+  Check,
+} from "phosphor-react";
 import { toast, Toaster } from "sonner";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { consultarCep } from "../../helpers/functions";
 
 export const OrdemServico = () => {
   const dataSchema = z.object({
-    data_entrada: z.string().date(),
-    data_saida: z.string().date(),
-    nome: z.string().min(3).max(100),
-    cpf_cnpj: z.string().min(11).max(11),
-    rg_inscricao: z.string().min(9).max(9),
-    cep: z.string().min(8).max(8),
-    cidade: z.string().min(3).max(100),
-    estado: z.string().min(2).max(2),
-    bairro: z.string().min(3).max(100),
-    numero: z.string().min(1).max(10),
-    endereco: z.string().min(10).max(200),
-    marca: z.string().min(3).max(100),
-    modelo: z.string().min(3).max(100),
-    ano: z.string().min(4).max(4),
-    motor: z.string().min(3).max(100),
-    placa: z.string().min(7).max(7),
+    data_entrada: z
+      .string()
+      .nonempty("A data de entrada é obrigatória")
+      .refine((val) => !isNaN(Date.parse(val)), "Data de entrada inválida"),
+    data_saida: z
+      .string()
+      .nonempty("A data de saída é obrigatória")
+      .refine((val) => !isNaN(Date.parse(val)), "Data de saída inválida"),
+    nome: z
+      .string()
+      .min(3, "O nome deve ter no mínimo 3 caracteres")
+      .max(100, "O nome pode ter no máximo 100 caracteres"),
+    cpf_cnpj: z
+      .string()
+      .min(11, "CPF/CNPJ deve ter 11 dígitos")
+      .max(11, "CPF/CNPJ deve ter 11 dígitos"),
+    rg_inscricao: z
+      .string()
+      .min(9, "RG/Inscrição deve ter 9 dígitos")
+      .max(9, "RG/Inscrição deve ter 9 dígitos"),
+    cep: z
+      .string()
+      .min(8, "CEP deve ter 8 dígitos")
+      .max(8, "CEP deve ter 8 dígitos"),
+    cidade: z
+      .string()
+      .min(3, "A cidade deve ter no mínimo 3 caracteres")
+      .max(100, "A cidade pode ter no máximo 100 caracteres"),
+    estado: z
+      .string()
+      .min(2, "O estado deve ter 2 caracteres")
+      .max(2, "O estado deve ter 2 caracteres"),
+    bairro: z
+      .string()
+      .min(3, "O bairro deve ter no mínimo 3 caracteres")
+      .max(100, "O bairro pode ter no máximo 100 caracteres"),
+    numero: z
+      .string()
+      .min(1, "O número é obrigatório")
+      .max(10, "O número pode ter no máximo 10 caracteres"),
+    endereco: z
+      .string()
+      .min(10, "O endereço deve ter no mínimo 10 caracteres")
+      .max(200, "O endereço pode ter no máximo 200 caracteres"),
+    marca: z
+      .string()
+      .min(3, "A marca deve ter no mínimo 3 caracteres")
+      .max(100, "A marca pode ter no máximo 100 caracteres"),
+    modelo: z
+      .string()
+      .min(3, "O modelo deve ter no mínimo 3 caracteres")
+      .max(100, "O modelo pode ter no máximo 100 caracteres"),
+    ano: z
+      .string()
+      .min(4, "O ano deve ter 4 dígitos")
+      .max(4, "O ano deve ter 4 dígitos"),
+    motor: z
+      .string()
+      .min(3, "O motor deve ter no mínimo 3 caracteres")
+      .max(100, "O motor pode ter no máximo 100 caracteres"),
+    placa: z
+      .string()
+      .min(7, "A placa deve ter 7 caracteres")
+      .max(7, "A placa deve ter 7 caracteres"),
     km: z.coerce
       .number({
         invalid_type_error: "KM deve ser um número válido",
@@ -41,14 +97,39 @@ export const OrdemServico = () => {
     pecasServicos: z
       .object({
         qtde: z.coerce.number().min(1, "Quantidade mínima é 1"),
-        cod: z.string().min(3, "Código deve ter pelo menos 3 caracteres"),
+        cod: z.string(), // campo opcional sem validação customizada
         descricao: z.string().min(3, "Descrição muito curta"),
         valorUnit: z.coerce.number().min(0.01, "Valor unitário inválido"),
         total: z.coerce.number().min(0.01, "Total inválido"),
+        adicionado: z.boolean(),
       })
       .array()
-      .nonempty("Adicione pelo menos um item"),
+      .nonempty("Adicione pelo menos um item")
+      .refine(
+        (items) => items.some((item) => item.adicionado),
+        "Pelo menos um item deve ser confirmado"
+      ),
   });
+
+  // Função para extrair o primeiro erro (já implementada)
+  const extractFirstError = (errors: any): string => {
+    if (!errors) return "";
+    if (errors.message) return errors.message;
+    for (const key in errors) {
+      if (errors.hasOwnProperty(key)) {
+        const error = extractFirstError(errors[key]);
+        if (error) return error;
+      }
+    }
+    return "";
+  };
+
+  const onError = (errors: any) => {
+    const firstError = extractFirstError(errors);
+    if (firstError) {
+      toast.error(firstError);
+    }
+  };
 
   type DataForm = z.infer<typeof dataSchema>;
 
@@ -62,8 +143,16 @@ export const OrdemServico = () => {
   } = useForm<DataForm>({
     resolver: zodResolver(dataSchema),
     defaultValues: {
+      // Linha default não será considerada "adicionada"
       pecasServicos: [
-        { qtde: 1, cod: "", descricao: "", valorUnit: 0, total: 0 },
+        {
+          qtde: 1,
+          cod: "",
+          descricao: "",
+          valorUnit: 0,
+          total: 0,
+          adicionado: false,
+        },
       ],
     },
   });
@@ -74,7 +163,6 @@ export const OrdemServico = () => {
   });
 
   const [totalGeral, setTotalGeral] = useState(0);
-
   const cepValue = watch("cep");
 
   useEffect(() => {
@@ -101,7 +189,7 @@ export const OrdemServico = () => {
 
   const onSubmit = (data: DataForm) => {
     console.log("data", data);
-    console.log("errors", errors);
+    // Gera o PDF apenas com as linhas adicionadas (adicionado === true)
     generatePDF(data);
   };
 
@@ -117,92 +205,111 @@ export const OrdemServico = () => {
     const pdf = new jsPDF("p", "mm", "a4");
     const margin = 10;
     let currentY = margin;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const headerHeight = 18; // altura do cabeçalho
 
-    // Cabeçalho
+    // Cabeçalho com fundo azul
+    pdf.setFillColor(41, 128, 185);
+    pdf.rect(margin, currentY, pageWidth - margin * 2, headerHeight, "F");
+    const headerCenterY = currentY + headerHeight / 2 + 3;
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text("Stock Car", margin + 2, headerCenterY);
+    pdf.setFont("Helvetica", "normal");
+    pdf.setFontSize(9);
+    const contactInfo =
+      "Cel: (18) 99700-0440, End.: Av. Joaquim Constantino 4161 - Presidente Prudente / SP";
+    pdf.text(contactInfo, margin + 60, headerCenterY, {
+      maxWidth: pageWidth - margin * 2 - 60,
+    });
+    pdf.setTextColor(0, 0, 0);
+    currentY += headerHeight + 5;
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 10;
+
+    // Resto do PDF (dados do serviço, cliente, veículo, etc.)
+    pdf.setFont("Helvetica", "bold");
     pdf.setFontSize(18);
     pdf.text("Ordem de Serviço", margin, currentY);
     currentY += 10;
-
-    // Datas
+    pdf.setFont("Helvetica", "normal");
     pdf.setFontSize(12);
     pdf.text(
-      `Data de entrada: ${formatDate(data.data_entrada)}`,
+      `Data de entrada: ${formatDate(watch("data_entrada"))}`,
       margin,
       currentY
     );
     currentY += 8;
-
-    if (data.data_saida) {
+    if (watch("data_saida")) {
       pdf.text(
-        `Data de saída: ${formatDate(data.data_saida)}`,
+        `Data de saída: ${formatDate(watch("data_saida"))}`,
         margin,
         currentY
       );
       currentY += 8;
     }
-
-    // Divisória
-    pdf.setLineWidth(0.5);
-    pdf.line(
-      margin,
-      currentY,
-      pdf.internal.pageSize.getWidth() - margin,
-      currentY
-    );
+    pdf.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 10;
 
-    // Dados do Cliente
+    pdf.setFont("Helvetica", "bold");
     pdf.setFontSize(14);
     pdf.text("Dados do Cliente", margin, currentY);
     currentY += 8;
-
+    pdf.setFont("Helvetica", "normal");
     pdf.setFontSize(12);
     const clientData = [
-      `Nome: ${data.nome || "N/D"}`,
-      `CPF: ${data.cpf_cnpj || "N/D"}`,
-      `RG: ${data.rg_inscricao || "N/D"}`,
-      `Endereço: ${data.endereco || "N/D"}, ${data.numero || "S/N"}`,
-      `Bairro: ${data.bairro || "N/D"}`,
-      `CEP: ${data.cep || "N/D"}`,
-      `Cidade/UF: ${data.cidade || "N/D"} - ${data.estado || "N/D"}`,
+      `Nome: ${watch("nome") || "N/D"}`,
+      `CPF: ${watch("cpf_cnpj") || "N/D"}`,
+      `RG: ${watch("rg_inscricao") || "N/D"}`,
+      `Endereço: ${watch("endereco") || "N/D"}, ${watch("numero") || "S/N"}`,
+      `Bairro: ${watch("bairro") || "N/D"}`,
+      `CEP: ${watch("cep") || "N/D"}`,
+      `Cidade/UF: ${watch("cidade") || "N/D"} - ${watch("estado") || "N/D"}`,
     ];
-
     clientData.forEach((line) => {
       pdf.text(line, margin, currentY);
       currentY += 6;
     });
+    pdf.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 10;
 
-    // Dados do Veículo
+    pdf.setFont("Helvetica", "bold");
     pdf.setFontSize(14);
     pdf.text("Dados do Veículo", margin, currentY);
     currentY += 8;
-
+    pdf.setFont("Helvetica", "normal");
     pdf.setFontSize(12);
     const vehicleData = [
-      `Marca: ${data.marca || "N/D"}`,
-      `Modelo: ${data.modelo || "N/D"}`,
-      `Ano: ${data.ano || "N/D"}`,
-      `Motor: ${data.motor || "N/D"}`,
-      `Placa: ${data.placa || "N/D"}`,
+      `Marca: ${watch("marca") || "N/D"}`,
+      `Modelo: ${watch("modelo") || "N/D"}`,
+      `Ano: ${watch("ano") || "N/D"}`,
+      `Motor: ${watch("motor") || "N/D"}`,
+      `Placa: ${watch("placa") || "N/D"}`,
     ];
-
     vehicleData.forEach((line) => {
       pdf.text(line, margin, currentY);
       currentY += 6;
     });
+    pdf.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 10;
 
-    // Tabela de Peças/Serviços
-    if (data.pecasServicos?.length > 0) {
+    // Filtra as linhas que foram adicionadas (adicionado === true)
+    const pecasAdicionadas = watch("pecasServicos").filter(
+      (item) => item.adicionado === true
+    );
+    if (pecasAdicionadas.length > 0) {
+      pdf.setFont("Helvetica", "bold");
       pdf.setFontSize(14);
       pdf.text("Produtos/Serviços", margin, currentY);
-      currentY += 10;
+      currentY += 6;
+      pdf.setFont("Helvetica", "normal");
 
       autoTable(pdf, {
         startY: currentY,
         head: [["Qtde", "Código", "Descrição", "Valor Unitário", "Total"]],
-        body: data.pecasServicos.map((item) => [
+        body: pecasAdicionadas.map((item) => [
           item.qtde,
           item.cod,
           item.descricao,
@@ -210,65 +317,76 @@ export const OrdemServico = () => {
           `R$ ${Number(item.total).toFixed(2)}`,
         ]),
         theme: "grid",
-        styles: { fontSize: 10 },
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: [255, 255, 255],
+          halign: "center",
+        },
+        bodyStyles: { halign: "center" },
         margin: { left: margin },
       });
+      // Atualiza a posição com base na tabela
+      currentY = (pdf as any).lastAutoTable.finalY + 10;
     }
 
-    const totalGeral = data.pecasServicos.reduce(
-      (acc, item) => acc + item.total,
+    // Total Geral com destaque (soma apenas as linhas adicionadas)
+    const totalPDF = pecasAdicionadas.reduce(
+      (acc, item) => acc + Number(item.total || 0),
       0
     );
-    pdf.setFontSize(14);
-    pdf.text(`Total: R$ ${totalGeral.toFixed(2)}`, margin, currentY + 10);
+    pdf.setFillColor(230, 230, 230);
+    pdf.rect(margin, currentY, pageWidth - margin * 2, 10, "F");
+    pdf.setFont("Helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text(`Total: R$ ${totalPDF.toFixed(2)}`, margin + 2, currentY + 7);
 
     pdf.save("ordem-servico.pdf");
   };
 
   const today = new Date().toISOString().split("T")[0];
 
+  const [editedRows, setEditedRows] = useState<Set<number>>(new Set());
+
   const addNewRow = () => {
-    if (validateBeforeAddRow()) {
-      append({
-        qtde: 0,
-        cod: "",
-        descricao: "",
-        valorUnit: 0,
-        total: 0,
-      });
-    }
+    append({
+      qtde: 1,
+      cod: "",
+      descricao: "",
+      valorUnit: 0,
+      total: 0,
+      adicionado: false,
+    });
   };
 
-  const validateBeforeAddRow = (): boolean => {
-    const lastRowIndex = fields.length - 1;
+  const handleInclude = (index: number) => {
+    const item = watch(`pecasServicos.${index}`);
 
-    // Verifica se todos os campos obrigatórios estão preenchidos
-    const validations = [
-      !!(
-        watch(`pecasServicos.${lastRowIndex}.qtde`) &&
-        watch(`pecasServicos.${lastRowIndex}.qtde`) >= 1
-      ),
-      !!watch(`pecasServicos.${lastRowIndex}.descricao`),
-      !!(
-        watch(`pecasServicos.${lastRowIndex}.valorUnit`) &&
-        watch(`pecasServicos.${lastRowIndex}.valorUnit`) >= 0.01
-      ),
-      !!(
-        watch(`pecasServicos.${lastRowIndex}.total`) &&
-        watch(`pecasServicos.${lastRowIndex}.total`) >= 0.01
-      ),
-    ];
-
-    // Se alguma validação falhou, mostra mensagem de erro
-    if (!validations.every(Boolean)) {
-      toast.error("Por favor, preencha todos os campos obrigatórios!");
-      return false;
+    if (!item.qtde || item.qtde < 1) {
+      toast.error("Quantidade inválida");
+      return;
+    }
+    if (!item.descricao || item.descricao.length < 3) {
+      toast.error("Descrição muito curta");
+      return;
+    }
+    if (!item.valorUnit || item.valorUnit < 0.01) {
+      toast.error("Valor unitário inválido");
+      return;
     }
 
-    return true;
+    setValue(`pecasServicos.${index}.adicionado`, true);
+    toast.success("Produto adicionado", {
+      position: "top-right",
+    });
   };
 
   const handleRemove = (index: number) => {
+    // Permite remover apenas linhas que foram adicionadas via botão (+)
+    // if (!watch(`pecasServicos.${index}.adicionado`)) {
+    //   toast.error("Não é possível remover a linha padrão!");
+    //   return;
+    // }
     if (fields.length === 1) {
       toast.error("Deve haver pelo menos um item na tabela");
       return;
@@ -283,33 +401,31 @@ export const OrdemServico = () => {
         const index = Number(parts[1]);
         const field = parts[2];
 
-        // Só calcula se for alteração em qtde ou valorUnit
         if (field === "qtde" || field === "valorUnit") {
-          const qtde = value.pecasServicos?.[index]?.qtde || 0;
-          const valorUnit = value.pecasServicos?.[index]?.valorUnit || 0;
-          const newTotal = qtde * valorUnit;
-
-          // Só atualiza se o valor for diferente
-          if (value.pecasServicos?.[index]?.total !== newTotal) {
-            setValue(`pecasServicos.${index}.total`, newTotal);
+          const qtde = Number(value.pecasServicos?.[index]?.qtde || 0);
+          const valorUnit = Number(
+            value.pecasServicos?.[index]?.valorUnit || 0
+          );
+          const novoTotal = qtde * valorUnit;
+          if (Number(value.pecasServicos?.[index]?.total) !== novoTotal) {
+            setValue(`pecasServicos.${index}.total`, novoTotal);
           }
         }
       }
     });
-
     return () => subscription.unsubscribe();
   }, [watch, setValue]);
 
-
   useEffect(() => {
     const subscription = watch((value) => {
-      const total = value.pecasServicos?.reduce(
-        (acc, item) => acc + (item!.total || 0),
-        0
-      ) || 0;
-      setTotalGeral(total);
+      if (value && value.pecasServicos) {
+        const novoTotalGeral = value.pecasServicos.reduce(
+          (acc, item) => acc + Number(item?.total || 0),
+          0
+        );
+        setTotalGeral(novoTotalGeral);
+      }
     });
-
     return () => subscription.unsubscribe();
   }, [watch]);
 
@@ -318,20 +434,18 @@ export const OrdemServico = () => {
       <Toaster richColors closeButton position="top-right" />
       <h1>Nova ordem de serviço</h1>
       <Separator />
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onError)}>
         {/* Datas */}
         <InputContainer>
           <header>
             <h3>Data do serviço prestado</h3>
             <Database size={20} />
           </header>
-
           <div className="row">
             <div className="input-group" style={{ flex: "1" }}>
               <label htmlFor="data_entrada">Data de entrada</label>
               <input {...register("data_entrada")} type="date" max={today} />
             </div>
-
             <div className="input-group" style={{ flex: "1" }}>
               <label htmlFor="data_saida">Data de saída</label>
               <input {...register("data_saida")} type="date" min={today} />
@@ -345,7 +459,6 @@ export const OrdemServico = () => {
             <h3>Informações do veículo</h3>
             <Car size={20} />
           </header>
-
           <div className="row">
             <div className="input-group">
               <label htmlFor="marca">Marca:</label>
@@ -356,7 +469,6 @@ export const OrdemServico = () => {
                 id="marca"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="modelo">Modelo:</label>
               <input
@@ -366,7 +478,6 @@ export const OrdemServico = () => {
                 id="modelo"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="ano">Ano:</label>
               <input
@@ -376,7 +487,6 @@ export const OrdemServico = () => {
                 id="ano"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="motor">Motor:</label>
               <input
@@ -385,11 +495,7 @@ export const OrdemServico = () => {
                 placeholder="Ex: 1.0, 2.0, etc."
                 id="motor"
               />
-              {/* {errors?.motor && (
-            <span className="error-message">{errors.motor.message}</span>
-          )} */}
             </div>
-
             <div className="input-group">
               <label htmlFor="placa">Placa:</label>
               <input
@@ -399,11 +505,7 @@ export const OrdemServico = () => {
                 id="placa"
                 maxLength={7}
               />
-              {/* {errors?.placa && (
-            <span className="error-message">{errors.placa.message}</span>
-          )} */}
             </div>
-
             <div className="input-group">
               <label htmlFor="km">KM:</label>
               <input
@@ -412,7 +514,6 @@ export const OrdemServico = () => {
                 placeholder="Quilometragem atual"
                 id="km"
               />
-              {errors?.km && toast.warning(errors.km.message)}
             </div>
           </div>
         </InputContainer>
@@ -423,7 +524,6 @@ export const OrdemServico = () => {
             <h3>Informações do cliente</h3>
             <User size={20} />
           </header>
-
           <div className="row">
             <div className="input-group" style={{ width: "30%" }}>
               <label htmlFor="nome">Nome completo:</label>
@@ -434,7 +534,6 @@ export const OrdemServico = () => {
                 id="nome"
               />
             </div>
-
             <div className="input-group" style={{ width: "25%" }}>
               <label htmlFor="cpfCnpj">CPF / CNPJ:</label>
               <input
@@ -444,7 +543,6 @@ export const OrdemServico = () => {
                 id="cpfCnpj"
               />
             </div>
-
             <div className="input-group" style={{ width: "25%" }}>
               <label htmlFor="inscricaoRg">Inscrição / RG:</label>
               <input
@@ -455,7 +553,6 @@ export const OrdemServico = () => {
               />
             </div>
           </div>
-
           <div className="row">
             <div className="input-group">
               <label htmlFor="cep">CEP:</label>
@@ -467,7 +564,6 @@ export const OrdemServico = () => {
                 maxLength={8}
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="cidade">Cidade:</label>
               <input
@@ -477,7 +573,6 @@ export const OrdemServico = () => {
                 id="cidade"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="estado">Estado:</label>
               <input
@@ -487,7 +582,6 @@ export const OrdemServico = () => {
                 id="estado"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="bairro">Bairro:</label>
               <input
@@ -497,7 +591,6 @@ export const OrdemServico = () => {
                 id="bairro"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="endereco">Endereço:</label>
               <input
@@ -507,7 +600,6 @@ export const OrdemServico = () => {
                 id="endereco"
               />
             </div>
-
             <div className="input-group">
               <label htmlFor="numero">Número:</label>
               <input
@@ -526,7 +618,6 @@ export const OrdemServico = () => {
             <h3>Produtos / serviços</h3>
             <Wrench size={20} />
           </header>
-
           <div className="row">
             <table>
               <thead>
@@ -540,67 +631,151 @@ export const OrdemServico = () => {
                 </tr>
               </thead>
               <tbody>
-                {fields.map((field, index) => (
-                  <tr key={field.id}>
-                    <td>
-                      <input
-                        type="number"
-                        {...register(`pecasServicos.${index}.qtde`)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        {...register(`pecasServicos.${index}.cod`)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        {...register(`pecasServicos.${index}.descricao`)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        {...register(`pecasServicos.${index}.valorUnit`)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        {...register(`pecasServicos.${index}.total`)}
-                      />
-                    </td>
-                    <td>
-                      <div>
-                        {fields.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemove(index)}
-                          >
-                            <Trash />
-                          </button>
-                        )}
-                        {index === fields.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={addNewRow}
-                            style={{ marginLeft: "8px" }}
-                          >
-                            <Plus />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {fields.map((field, index) => {
+                  const registerQtde = register(`pecasServicos.${index}.qtde`);
+                  const registerCod = register(`pecasServicos.${index}.cod`);
+                  const registerDesc = register(
+                    `pecasServicos.${index}.descricao`
+                  );
+                  const registerUnit = register(
+                    `pecasServicos.${index}.valorUnit`
+                  );
+
+                  return (
+                    <tr key={field.id}>
+                      <td>
+                        <input
+                          type="number"
+                          step="any"
+                          {...registerQtde}
+                          onChange={(e) => {
+                            registerQtde.onChange(e);
+                            if (field.adicionado) {
+                              setValue(
+                                `pecasServicos.${index}.adicionado`,
+                                false
+                              );
+                            }
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          {...registerCod}
+                          onChange={(e) => {
+                            registerCod.onChange(e);
+                            if (field.adicionado) {
+                              setValue(
+                                `pecasServicos.${index}.adicionado`,
+                                false
+                              );
+                            }
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          {...registerDesc}
+                          onChange={(e) => {
+                            registerDesc.onChange(e);
+                            if (field.adicionado) {
+                              setValue(
+                                `pecasServicos.${index}.adicionado`,
+                                false
+                              );
+                            }
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="any"
+                          {...registerUnit}
+                          onChange={(e) => {
+                            registerUnit.onChange(e);
+                            if (field.adicionado) {
+                              setValue(
+                                `pecasServicos.${index}.adicionado`,
+                                false
+                              );
+                            }
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          step="any"
+                          {...register(`pecasServicos.${index}.total`)}
+                          readOnly
+                        />
+                      </td>
+                      <td>
+                        <div>
+                          {field.adicionado ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRemove(index)}
+                              style={{ background: "#ff2e2e" }}
+                            >
+                              <Trash />
+                            </button>
+                          ) : (
+                            <div style={{ gap: "1rem" }}>
+                              <button
+                                type="button"
+                                onClick={() => handleInclude(index)}
+                                style={{ background: "#2ecc71" }}
+                              >
+                                <Check />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemove(index)}
+                                style={{ background: "#ff2e2e" }}
+                              >
+                                <Trash />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <div className="total-geral">
-            <label>Total Geral:</label>
-            <span>R$ {totalGeral.toFixed(2)}</span>
+          <div style={{ textAlign: "center" }}>
+            <button
+              type="button"
+              onClick={addNewRow}
+              style={{
+                padding: "10px",
+                width: "25%",
+                backgroundColor: "green",
+                border: "none",
+                borderRadius: "5px",
+                color: "white",
+              }}
+            >
+              Adicionar Novo Produto/Serviço
+            </button>
+          </div>
+          <div
+            className="total-geral"
+            style={{
+              textAlign: "right",
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+            }}
+          >
+            <h1>Total Geral:</h1>
+            <h1>R$ {Number(totalGeral).toFixed(2)}</h1>
           </div>
         </InfoPecasServicosContainer>
         <button type="submit">Gerar PDF</button>
