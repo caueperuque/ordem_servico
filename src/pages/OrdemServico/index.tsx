@@ -332,7 +332,7 @@ export const OrdemServico = () => {
     pdf.setFontSize(16);
     pdf.text(`Total: R$ ${totalPDF.toFixed(2)}`, margin + 2, currentY + 7);
 
-    pdf.save("ordem-servico.pdf");
+    pdf.save(`ordem-servico-para-${watch("nome").replace(' ', '-').toLowerCase()}.pdf`);
   };
 
   const today = new Date().toISOString().split("T")[0];
@@ -431,7 +431,7 @@ export const OrdemServico = () => {
             </div>
             <div className="input-group" style={{ flex: "1" }}>
               <label htmlFor="data_saida">Data de saída</label>
-              <input {...register("data_saida")} type="date" min={today} />
+              <input {...register("data_saida")} type="date" max={today} />
             </div>
           </div>
         </InputContainer>
