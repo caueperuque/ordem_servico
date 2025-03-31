@@ -31,7 +31,7 @@ export const OrdemServico = () => {
     cpf_cnpj: z
       .string()
       .min(11, "CPF/CNPJ deve ter 11 dígitos")
-      .max(11, "CPF/CNPJ deve ter 11 dígitos"),
+      .max(20, "CPF/CNPJ deve ter 11 dígitos"),
     rg_inscricao: z
       .string()
       .min(9, "RG/Inscrição deve ter 9 dígitos")
