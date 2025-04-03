@@ -1,5 +1,6 @@
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { jsPDF } from "jspdf";
+import { IMaskInput } from "react-imask";
 import autoTable from "jspdf-autotable";
 import {
   InfoPecasServicosContainer,
@@ -34,8 +35,8 @@ export const OrdemServico = () => {
       .max(20, "CPF/CNPJ deve ter 11 dígitos"),
     rg_inscricao: z
       .string()
-      .min(9, "RG/Inscrição deve ter 9 dígitos")
-      .max(9, "RG/Inscrição deve ter 9 dígitos"),
+      .min(10, "RG/Inscrição deve ter no mínimo 9 dígitos")
+      .max(20, "RG/Inscrição deve ter no máximo 9 dígitos"),
     cep: z
       .string()
       .min(8, "CEP deve ter 8 dígitos")
@@ -102,6 +103,8 @@ export const OrdemServico = () => {
         "Pelo menos um item deve ser confirmado"
       ),
   });
+
+  const [cnpjOrCpf, setCnpjOrCpf] = useState<"cpf" | "cnpj">("cpf");
 
   // Função para extrair o primeiro erro (já implementada)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -183,7 +186,9 @@ export const OrdemServico = () => {
 
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString("pt-BR", {timeZone: 'UTC'});
+      return new Date(dateString).toLocaleDateString("pt-BR", {
+        timeZone: "UTC",
+      });
     } catch {
       return "Data inválida";
     }
@@ -249,7 +254,7 @@ export const OrdemServico = () => {
     pdf.setFontSize(12);
     const clientData = [
       `Nome: ${watch("nome") || "N/D"}`,
-      `CPF: ${watch("cpf_cnpj") || "N/D"}`,
+      `${cnpjOrCpf === "cpf" ? "CPF" : "CNPJ"}: ${watch("cpf_cnpj") || "N/D"}`,
       `RG: ${watch("rg_inscricao") || "N/D"}`,
       `Endereço: ${watch("endereco") || "N/D"}, ${watch("numero") || "S/N"}`,
       `Bairro: ${watch("bairro") || "N/D"}`,
@@ -330,7 +335,9 @@ export const OrdemServico = () => {
     pdf.setFontSize(16);
     pdf.text(`Total: R$ ${totalPDF.toFixed(2)}`, margin + 2, currentY + 7);
 
-    pdf.save(`ordem-servico-para-${watch("nome").replace(' ', '-').toLowerCase()}.pdf`);
+    pdf.save(
+      `ordem-servico-para-${watch("nome").replace(" ", "-").toLowerCase()}.pdf`
+    );
   };
 
   const today = new Date().toISOString().split("T")[0];
@@ -516,21 +523,73 @@ export const OrdemServico = () => {
               />
             </div>
             <div className="input-group" style={{ width: "25%" }}>
-              <label htmlFor="cpfCnpj">CPF / CNPJ:</label>
-              <input
-                {...register("cpf_cnpj")}
-                type="text"
-                placeholder="CPF ou CNPJ"
-                id="cpfCnpj"
-              />
+              <div style={{ display: "flex", gap: "15px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "5px" }}
+                >
+                  <label htmlFor="">CPF</label>
+                  <input
+                    type="radio"
+                    name="cpf"
+                    id="cpf-cnpj"
+                    onChange={() => setCnpjOrCpf("cpf")}
+                    checked={cnpjOrCpf === "cpf" && true}
+                  />
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "5px" }}
+                >
+                  <label htmlFor="">CNPJ</label>
+                  <input
+                    type="radio"
+                    name="cpf"
+                    id="cnpj"
+                    onChange={() => setCnpjOrCpf("cnpj")}
+                    checked={cnpjOrCpf === "cnpj" && true}
+                  />
+                </div>
+              </div>
+              {cnpjOrCpf === "cpf" ? (
+                <Controller
+                  name="cpf_cnpj"
+                  control={control}
+                  render={({ field }) => (
+                    <IMaskInput
+                      {...field}
+                      mask="000.000.000-00"
+                      placeholder="CPF"
+                      id="cpfCnpj"
+                    />
+                  )}
+                />
+              ) : (
+                <Controller
+                  name="cpf_cnpj"
+                  control={control}
+                  render={({ field }) => (
+                    <IMaskInput
+                      {...field}
+                      mask="00.000.000/0000-00"
+                      placeholder="CNPJ"
+                      id="cpfCnpj"
+                    />
+                  )}
+                />
+              )}
             </div>
             <div className="input-group" style={{ width: "25%" }}>
               <label htmlFor="inscricaoRg">Inscrição / RG:</label>
-              <input
-                {...register("rg_inscricao")}
-                type="text"
-                placeholder="Inscrição ou RG"
-                id="inscricaoRg"
+              <Controller
+                name="rg_inscricao"
+                control={control}
+                render={({ field }) => (
+                  <IMaskInput
+                    {...field}
+                    mask="00.000.000-0"
+                    placeholder="Inscrição ou RG"
+                    id="inscricaoRg"
+                  />
+                )}
               />
             </div>
           </div>
