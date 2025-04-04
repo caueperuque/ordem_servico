@@ -334,7 +334,7 @@ export const OrdemServico = () => {
     pdf.text(`Total: R$ ${totalPDF.toFixed(2)}`, margin + 2, currentY + 7);
 
     pdf.save(
-      `ordem-servico-para-${watch("nome").replace(" ", "-").toLowerCase()}.pdf`
+      `ordem-servico-para-${watch("nome").replace(" ", "-").toLowerCase()}-${watch("modelo")}-${watch("placa")}.pdf`
     );
   };
 
