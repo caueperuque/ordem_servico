@@ -33,10 +33,7 @@ export const OrdemServico = () => {
       .string()
       .min(11, "CPF/CNPJ deve ter 11 dígitos")
       .max(20, "CPF/CNPJ deve ter 11 dígitos"),
-    rg_inscricao: z
-      .string()
-      .min(10, "RG/Inscrição deve ter no mínimo 9 dígitos")
-      .max(20, "RG/Inscrição deve ter no máximo 9 dígitos"),
+    rg_inscricao: z.string().nullable(),
     cep: z
       .string()
       .min(8, "CEP deve ter 8 dígitos")
@@ -105,6 +102,7 @@ export const OrdemServico = () => {
   });
 
   const [cnpjOrCpf, setCnpjOrCpf] = useState<"cpf" | "cnpj">("cpf");
+  const [rgOrInscricao, setRgOrInscricao] = useState<"rg" | "inscricao">("rg");
 
   // Função para extrair o primeiro erro (já implementada)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -212,7 +210,7 @@ export const OrdemServico = () => {
     pdf.setFont("Helvetica", "normal");
     pdf.setFontSize(9);
     const contactInfo =
-      "Cel: (18) 99700-0440, End.: Av. Joaquim Constantino 4161 - Presidente Prudente / SP";
+      "Cel: (18) 99771-0440, End.: Av. Joaquim Constantino 4161 - Presidente Prudente / SP";
     pdf.text(contactInfo, margin + 60, headerCenterY, {
       maxWidth: pageWidth - margin * 2 - 60,
     });
@@ -255,7 +253,7 @@ export const OrdemServico = () => {
     const clientData = [
       `Nome: ${watch("nome") || "N/D"}`,
       `${cnpjOrCpf === "cpf" ? "CPF" : "CNPJ"}: ${watch("cpf_cnpj") || "N/D"}`,
-      `RG: ${watch("rg_inscricao") || "N/D"}`,
+      `${rgOrInscricao === "rg" ? "RG:" : "Inscrição Estadual"}: ${watch("rg_inscricao") || "N/D"}`,
       `Endereço: ${watch("endereco") || "N/D"}, ${watch("numero") || "S/N"}`,
       `Bairro: ${watch("bairro") || "N/D"}`,
       `CEP: ${watch("cep") || "N/D"}`,
@@ -578,16 +576,56 @@ export const OrdemServico = () => {
               )}
             </div>
             <div className="input-group" style={{ width: "25%" }}>
-              <label htmlFor="inscricaoRg">Inscrição / RG:</label>
+              <div style={{ display: "flex", gap: "20px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "5px" }}
+                >
+                  <label htmlFor="">RG</label>
+                  <input
+                    type="radio"
+                    name="rg"
+                    id="rg-inscricao"
+                    onChange={() => setRgOrInscricao("rg")}
+                    checked={rgOrInscricao === "rg" && true}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    width: "100%",
+                  }}
+                >
+                  <label htmlFor="" style={{ width: "1000%" }}>
+                    Inscrição estadual
+                  </label>
+                  <input
+                    type="radio"
+                    name="inscricao"
+                    id="rg-inscricao"
+                    onChange={() => setRgOrInscricao("inscricao")}
+                    checked={rgOrInscricao === "inscricao" && true}
+                  />
+                </div>
+              </div>
               <Controller
                 name="rg_inscricao"
                 control={control}
                 render={({ field }) => (
                   <IMaskInput
                     {...field}
-                    mask="00.000.000-0"
-                    placeholder="Inscrição ou RG"
-                    id="inscricaoRg"
+                    mask={
+                      rgOrInscricao === "rg"
+                        ? "00.000.000-0"
+                        : "000.000.000.000"
+                    }
+                    placeholder={
+                      rgOrInscricao === "rg" ? "RG" : "Inscrição estadual"
+                    }
+                    id="rg_inscricao"
+                    // se o valor for null, usa uma string vazia
+                    value={field.value || ""}
                   />
                 )}
               />
