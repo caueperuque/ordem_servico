@@ -16,74 +16,122 @@ import { useCallback, useEffect, useState } from "react";
 import { consultarCep } from "../../helpers/functions";
 
 export const OrdemServico = () => {
+  // const dataSchema = z.object({
+  //   data_entrada: z
+  //     .string()
+  //     .nonempty("A data de entrada é obrigatória")
+  //     .refine((val) => !isNaN(Date.parse(val)), "Data de entrada inválida"),
+  //   data_saida: z
+  //     .string()
+  //     .nonempty("A data de saída é obrigatória")
+  //     .refine((val) => !isNaN(Date.parse(val)), "Data de saída inválida"),
+  //   nome: z
+  //     .string()
+  //     .min(3, "O nome deve ter no mínimo 3 caracteres")
+  //     .max(100, "O nome pode ter no máximo 100 caracteres"),
+  //   cpf_cnpj: z
+  //     .string()
+  //     .min(11, "CPF/CNPJ deve ter 11 dígitos")
+  //     .max(20, "CPF/CNPJ deve ter 11 dígitos"),
+  //   rg_inscricao: z.string().nullable(),
+  //   cep: z
+  //     .string()
+  //     .min(8, "CEP deve ter 8 dígitos")
+  //     .max(8, "CEP deve ter 8 dígitos"),
+  //   cidade: z
+  //     .string()
+  //     .min(3, "A cidade deve ter no mínimo 3 caracteres")
+  //     .max(100, "A cidade pode ter no máximo 100 caracteres"),
+  //   estado: z
+  //     .string()
+  //     .min(2, "O estado deve ter 2 caracteres")
+  //     .max(2, "O estado deve ter 2 caracteres"),
+  //   bairro: z
+  //     .string()
+  //     .min(3, "O bairro deve ter no mínimo 3 caracteres")
+  //     .max(100, "O bairro pode ter no máximo 100 caracteres"),
+  //   numero: z
+  //     .string()
+  //     .min(1, "O número é obrigatório")
+  //     .max(10, "O número pode ter no máximo 10 caracteres"),
+  //   endereco: z
+  //     .string()
+  //     .min(10, "O endereço deve ter no mínimo 10 caracteres")
+  //     .max(200, "O endereço pode ter no máximo 200 caracteres"),
+  //   marca: z
+  //     .string()
+  //     .min(3, "A marca deve ter no mínimo 3 caracteres")
+  //     .max(100, "A marca pode ter no máximo 100 caracteres"),
+  //   modelo: z
+  //     .string()
+  //     .min(3, "O modelo deve ter no mínimo 3 caracteres")
+  //     .max(100, "O modelo pode ter no máximo 100 caracteres"),
+  //   ano: z
+  //     .string()
+  //     .min(4, "O ano deve ter 4 dígitos")
+  //     .max(4, "O ano deve ter 4 dígitos"),
+  //   motor: z
+  //     .string()
+  //     .min(3, "O motor deve ter no mínimo 3 caracteres")
+  //     .max(100, "O motor pode ter no máximo 100 caracteres"),
+  //   placa: z
+  //     .string()
+  //     .min(7, "A placa deve ter 7 caracteres")
+  //     .max(7, "A placa deve ter 7 caracteres"),
+  //   km: z.coerce
+  //     .number({
+  //       invalid_type_error: "KM deve ser um número válido",
+  //     })
+  //     .min(1, "O campo KM não pode ser zero")
+  //     .max(999999, "KM máximo é 999.999"),
+  //   pecasServicos: z
+  //     .object({
+  //       qtde: z.coerce.number().min(1, "Quantidade mínima é 1"),
+  //       cod: z.string(), // campo opcional sem validação customizada
+  //       descricao: z.string().min(3, "Descrição muito curta"),
+  //       valorUnit: z.coerce.number().min(0.01, "Valor unitário inválido"),
+  //       total: z.coerce.number().min(0.01, "Total inválido"),
+  //       adicionado: z.boolean(),
+  //     })
+  //     .array()
+  //     .nonempty("Adicione pelo menos um item")
+  //     .refine(
+  //       (items) => items.some((item) => item.adicionado),
+  //       "Pelo menos um item deve ser confirmado"
+  //     ),
+  // });
+
   const dataSchema = z.object({
-    data_entrada: z
-      .string()
-      .nonempty("A data de entrada é obrigatória")
-      .refine((val) => !isNaN(Date.parse(val)), "Data de entrada inválida"),
-    data_saida: z
-      .string()
-      .nonempty("A data de saída é obrigatória")
-      .refine((val) => !isNaN(Date.parse(val)), "Data de saída inválida"),
+    data_entrada: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
+      message: "Data de entrada inválida",
+    }),
+    data_saida: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
+      message: "Data de saída inválida",
+    }),
     nome: z
       .string()
       .min(3, "O nome deve ter no mínimo 3 caracteres")
       .max(100, "O nome pode ter no máximo 100 caracteres"),
-    cpf_cnpj: z
-      .string()
-      .min(11, "CPF/CNPJ deve ter 11 dígitos")
-      .max(20, "CPF/CNPJ deve ter 11 dígitos"),
-    rg_inscricao: z.string().nullable(),
-    cep: z
-      .string()
-      .min(8, "CEP deve ter 8 dígitos")
-      .max(8, "CEP deve ter 8 dígitos"),
-    cidade: z
-      .string()
-      .min(3, "A cidade deve ter no mínimo 3 caracteres")
-      .max(100, "A cidade pode ter no máximo 100 caracteres"),
-    estado: z
-      .string()
-      .min(2, "O estado deve ter 2 caracteres")
-      .max(2, "O estado deve ter 2 caracteres"),
-    bairro: z
-      .string()
-      .min(3, "O bairro deve ter no mínimo 3 caracteres")
-      .max(100, "O bairro pode ter no máximo 100 caracteres"),
-    numero: z
-      .string()
-      .min(1, "O número é obrigatório")
-      .max(10, "O número pode ter no máximo 10 caracteres"),
-    endereco: z
-      .string()
-      .min(10, "O endereço deve ter no mínimo 10 caracteres")
-      .max(200, "O endereço pode ter no máximo 200 caracteres"),
-    marca: z
-      .string()
-      .min(3, "A marca deve ter no mínimo 3 caracteres")
-      .max(100, "A marca pode ter no máximo 100 caracteres"),
-    modelo: z
-      .string()
-      .min(3, "O modelo deve ter no mínimo 3 caracteres")
-      .max(100, "O modelo pode ter no máximo 100 caracteres"),
-    ano: z
-      .string()
-      .min(4, "O ano deve ter 4 dígitos")
-      .max(4, "O ano deve ter 4 dígitos"),
-    motor: z
-      .string()
-      .min(3, "O motor deve ter no mínimo 3 caracteres")
-      .max(100, "O motor pode ter no máximo 100 caracteres"),
-    placa: z
-      .string()
-      .min(7, "A placa deve ter 7 caracteres")
-      .max(7, "A placa deve ter 7 caracteres"),
+    cpf_cnpj: z.string().optional(),
+    rg_inscricao: z.string().nullable().optional(),
+    cep: z.string().optional(),
+    cidade: z.string().optional(),
+    estado: z.string().optional(),
+    bairro: z.string().optional(),
+    numero: z.string().optional(),
+    endereco: z.string().optional(),
+    marca: z.string().optional(),
+    modelo: z.string().optional(),
+    ano: z.string().optional(),
+    motor: z.string().optional(),
+    placa: z.string().optional(),
     km: z.coerce
       .number({
         invalid_type_error: "KM deve ser um número válido",
       })
-      .min(1, "O campo KM não pode ser zero")
-      .max(999999, "KM máximo é 999.999"),
+      .optional(),
+    // .min(1, "O campo KM não pode ser zero")
+    // .max(999_999, "KM máximo é 999.999"),
     pecasServicos: z
       .object({
         qtde: z.coerce.number().min(1, "Quantidade mínima é 1"),
@@ -251,13 +299,13 @@ export const OrdemServico = () => {
     pdf.setFont("Helvetica", "normal");
     pdf.setFontSize(12);
     const clientData = [
-      `Nome: ${watch("nome") || "N/D"}`,
-      `${cnpjOrCpf === "cpf" ? "CPF" : "CNPJ"}: ${watch("cpf_cnpj") || "N/D"}`,
-      `${rgOrInscricao === "rg" ? "RG:" : "Inscrição Estadual"}: ${watch("rg_inscricao") || "N/D"}`,
-      `Endereço: ${watch("endereco") || "N/D"}, ${watch("numero") || "S/N"}`,
-      `Bairro: ${watch("bairro") || "N/D"}`,
-      `CEP: ${watch("cep") || "N/D"}`,
-      `Cidade/UF: ${watch("cidade") || "N/D"} - ${watch("estado") || "N/D"}`,
+      `Nome: ${watch("nome") || "-"}`,
+      `${cnpjOrCpf === "cpf" ? "CPF" : "CNPJ"}: ${watch("cpf_cnpj") || "-"}`,
+      `${rgOrInscricao === "rg" ? "RG:" : "Inscrição Estadual"}: ${watch("rg_inscricao") || "-"}`,
+      `Endereço: ${watch("endereco") || "-"}, ${watch("numero") || "-"}`,
+      `Bairro: ${watch("bairro") || "-"}`,
+      `CEP: ${watch("cep") || "-"}`,
+      `Cidade/UF: ${watch("cidade") || "-"} - ${watch("estado") || "-"}`,
     ];
     clientData.forEach((line) => {
       pdf.text(line, margin, currentY);
@@ -273,11 +321,11 @@ export const OrdemServico = () => {
     pdf.setFont("Helvetica", "normal");
     pdf.setFontSize(12);
     const vehicleData = [
-      `Marca: ${watch("marca") || "N/D"}`,
-      `Modelo: ${watch("modelo") || "N/D"}`,
-      `Ano: ${watch("ano") || "N/D"}`,
-      `Motor: ${watch("motor") || "N/D"}`,
-      `Placa: ${watch("placa") || "N/D"}`,
+      `Marca: ${watch("marca") || "-"}`,
+      `Modelo: ${watch("modelo") || "-"}`,
+      `Ano: ${watch("ano") || "-"}`,
+      `Motor: ${watch("motor") || "-"}`,
+      `Placa: ${watch("placa") || "-"}`,
     ];
     vehicleData.forEach((line) => {
       pdf.text(line, margin, currentY);
