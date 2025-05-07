@@ -305,6 +305,6 @@ export async function gerarWord(
   const blob = await Packer.toBlob(doc);
   saveAs(
     blob,
-    `ordem-servico-${dados.nome.replace(/\s+/g, "-").toLowerCase()}.docx`
+    `ordem-servico-${dados.nome.replace(/\s+/g, "-").toLowerCase()}-${dados.modelo}-${dados.placa}.docx`
   );
 }

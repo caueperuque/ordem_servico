@@ -444,12 +444,6 @@ export const OrdemServico = () => {
     return () => subscription.unsubscribe();
   }, [watch, setValue]);
 
-  // const [dataTable, setDataTable] = useState([]);
-
-  // useEffect(() => {
-  //   setDataTable(control._formValues.pecasServicos)
-  // }, [handleInclude, control._formValues.pecasServicos])
-
   useEffect(() => {
     const subscription = watch((value) => {
       if (value && value.pecasServicos) {
@@ -570,12 +564,18 @@ export const OrdemServico = () => {
             </div>
             <div className="input-group" style={{ width: "30%" }}>
               <label htmlFor="celular">Celular/Telefone:</label>
-              <input
-                {...register("celular")}
-                type="text"
-                placeholder="(00) 00000-0000"
-                id="celular"
-              />
+              <Controller
+                  name="celular"
+                  control={control}
+                  render={({ field }) => (
+                    <IMaskInput
+                      {...field}
+                      mask="(00) 00000-0000"
+                      placeholder="(00) 00000-0000"
+                      id="celular"
+                    />
+                  )}
+                />
             </div>
             <div className="input-group" style={{ width: "25%" }}>
               <div style={{ display: "flex", gap: "15px" }}>
@@ -924,7 +924,7 @@ export const OrdemServico = () => {
                 borderRadius: "5px",
               }}
             >
-              Gerar PDF
+              Gerar documento
             </button>
           </div>
         </InfoPecasServicosContainer>
