@@ -1,7 +1,7 @@
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { jsPDF } from "jspdf";
+// import { jsPDF } from "jspdf";
 import { IMaskInput } from "react-imask";
-import autoTable from "jspdf-autotable";
+// import autoTable from "jspdf-autotable";
 import {
   InfoPecasServicosContainer,
   InputContainer,
@@ -14,6 +14,7 @@ import { Car, Database, Trash, User, Wrench, Check } from "phosphor-react";
 import { toast, Toaster } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import { consultarCep } from "../../helpers/functions";
+import { gerarWord } from "../../helpers/gerarWord"; // caminho relativo conforme sua estrutura
 
 export const OrdemServico = () => {
   // const dataSchema = z.object({
@@ -113,6 +114,7 @@ export const OrdemServico = () => {
       .min(3, "O nome deve ter no mínimo 3 caracteres")
       .max(100, "O nome pode ter no máximo 100 caracteres"),
     cpf_cnpj: z.string().optional(),
+    celular: z.string().optional(),
     rg_inscricao: z.string().nullable().optional(),
     cep: z.string().optional(),
     cidade: z.string().optional(),
@@ -226,165 +228,163 @@ export const OrdemServico = () => {
     fetchAddress();
   }, [cepValue, setValue]);
 
-  const onSubmit = () => {
-    generatePDF();
+  // const onSubmit = () => {
+  //   generatePDF();
+  // };
+  const onSubmit = (data: DataForm) => {
+    // chama a função externa passando TODOS os dados do form + o total geral
+    gerarWord({
+      ...data, totalGeral,
+      cnpjOrCpf,
+    });
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString("pt-BR", {
-        timeZone: "UTC",
-      });
-    } catch {
-      return "Data inválida";
-    }
-  };
+  // const generatePDF = () => {
+  //   const pdf = new jsPDF("p", "mm", "a4");
+  //   const margin = 10;
+  //   let currentY = margin;
+  //   const pageWidth = pdf.internal.pageSize.getWidth();
+  //   const headerHeight = 18; // altura do cabeçalho
 
-  const generatePDF = () => {
-    const pdf = new jsPDF("p", "mm", "a4");
-    const margin = 10;
-    let currentY = margin;
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const headerHeight = 18; // altura do cabeçalho
+  //   // Cabeçalho com fundo azul
+  //   pdf.setFillColor(41, 128, 185);
+  //   pdf.rect(margin, currentY, pageWidth - margin * 2, headerHeight, "F");
+  //   const headerCenterY = currentY + headerHeight / 2 + 3;
+  //   pdf.setTextColor(255, 255, 255);
+  //   pdf.setFont("Helvetica", "bold");
+  //   pdf.setFontSize(16);
+  //   pdf.text("Stock Car", margin + 2, headerCenterY);
+  //   pdf.setFont("Helvetica", "normal");
+  //   pdf.setFontSize(9);
+  //   const contactInfo =
+  //     "Cel: (18) 99771-0440, End.: Av. Joaquim Constantino 4161 - Presidente Prudente / SP";
+  //   pdf.text(contactInfo, margin + 60, headerCenterY, {
+  //     maxWidth: pageWidth - margin * 2 - 60,
+  //   });
+  //   pdf.setTextColor(0, 0, 0);
+  //   currentY += headerHeight + 5;
+  //   pdf.setLineWidth(0.5);
+  //   pdf.line(margin, currentY, pageWidth - margin, currentY);
+  //   currentY += 10;
 
-    // Cabeçalho com fundo azul
-    pdf.setFillColor(41, 128, 185);
-    pdf.rect(margin, currentY, pageWidth - margin * 2, headerHeight, "F");
-    const headerCenterY = currentY + headerHeight / 2 + 3;
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text("Stock Car", margin + 2, headerCenterY);
-    pdf.setFont("Helvetica", "normal");
-    pdf.setFontSize(9);
-    const contactInfo =
-      "Cel: (18) 99771-0440, End.: Av. Joaquim Constantino 4161 - Presidente Prudente / SP";
-    pdf.text(contactInfo, margin + 60, headerCenterY, {
-      maxWidth: pageWidth - margin * 2 - 60,
-    });
-    pdf.setTextColor(0, 0, 0);
-    currentY += headerHeight + 5;
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, currentY, pageWidth - margin, currentY);
-    currentY += 10;
+  //   // Resto do PDF (dados do serviço, cliente, veículo, etc.)
+  //   pdf.setFont("Helvetica", "bold");
+  //   pdf.setFontSize(18);
+  //   pdf.text("Ordem de Serviço", margin, currentY);
+  //   currentY += 10;
+  //   pdf.setFont("Helvetica", "normal");
+  //   pdf.setFontSize(12);
+  //   pdf.text(
+  //     `Data de entrada: ${formatDate(watch("data_entrada"))}`,
+  //     margin,
+  //     currentY
+  //   );
+  //   currentY += 8;
+  //   if (watch("data_saida")) {
+  //     pdf.text(
+  //       `Data de saída: ${formatDate(watch("data_saida"))}`,
+  //       margin,
+  //       currentY
+  //     );
+  //     currentY += 8;
+  //   }
+  //   pdf.line(margin, currentY, pageWidth - margin, currentY);
+  //   currentY += 10;
 
-    // Resto do PDF (dados do serviço, cliente, veículo, etc.)
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(18);
-    pdf.text("Ordem de Serviço", margin, currentY);
-    currentY += 10;
-    pdf.setFont("Helvetica", "normal");
-    pdf.setFontSize(12);
-    pdf.text(
-      `Data de entrada: ${formatDate(watch("data_entrada"))}`,
-      margin,
-      currentY
-    );
-    currentY += 8;
-    if (watch("data_saida")) {
-      pdf.text(
-        `Data de saída: ${formatDate(watch("data_saida"))}`,
-        margin,
-        currentY
-      );
-      currentY += 8;
-    }
-    pdf.line(margin, currentY, pageWidth - margin, currentY);
-    currentY += 10;
+  //   pdf.setFont("Helvetica", "bold");
+  //   pdf.setFontSize(14);
+  //   pdf.text("Dados do Cliente", margin, currentY);
+  //   currentY += 8;
+  //   pdf.setFont("Helvetica", "normal");
+  //   pdf.setFontSize(12);
+  //   const clientData = [
+  //     `Nome: ${watch("nome") || "-"}`,
+  //     `Celular / Telefone: ${watch("celular") || "-"}`,
+  //     `${cnpjOrCpf === "cpf" ? "CPF" : "CNPJ"}: ${watch("cpf_cnpj") || "-"}`,
+  //     `${rgOrInscricao === "rg" ? "RG:" : "Inscrição Estadual"}: ${watch("rg_inscricao") || "-"}`,
+  //     `Endereço: ${watch("endereco") || "-"}, ${watch("numero") || "-"}`,
+  //     `Bairro: ${watch("bairro") || "-"}`,
+  //     `CEP: ${watch("cep") || "-"}`,
+  //     `Cidade/UF: ${watch("cidade") || "-"} - ${watch("estado") || "-"}`,
+  //   ];
+  //   clientData.forEach((line) => {
+  //     pdf.text(line, margin, currentY);
+  //     currentY += 6;
+  //   });
+  //   pdf.line(margin, currentY, pageWidth - margin, currentY);
+  //   currentY += 10;
 
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(14);
-    pdf.text("Dados do Cliente", margin, currentY);
-    currentY += 8;
-    pdf.setFont("Helvetica", "normal");
-    pdf.setFontSize(12);
-    const clientData = [
-      `Nome: ${watch("nome") || "-"}`,
-      `${cnpjOrCpf === "cpf" ? "CPF" : "CNPJ"}: ${watch("cpf_cnpj") || "-"}`,
-      `${rgOrInscricao === "rg" ? "RG:" : "Inscrição Estadual"}: ${watch("rg_inscricao") || "-"}`,
-      `Endereço: ${watch("endereco") || "-"}, ${watch("numero") || "-"}`,
-      `Bairro: ${watch("bairro") || "-"}`,
-      `CEP: ${watch("cep") || "-"}`,
-      `Cidade/UF: ${watch("cidade") || "-"} - ${watch("estado") || "-"}`,
-    ];
-    clientData.forEach((line) => {
-      pdf.text(line, margin, currentY);
-      currentY += 6;
-    });
-    pdf.line(margin, currentY, pageWidth - margin, currentY);
-    currentY += 10;
+  //   pdf.setFont("Helvetica", "bold");
+  //   pdf.setFontSize(14);
+  //   pdf.text("Dados do Veículo", margin, currentY);
+  //   currentY += 8;
+  //   pdf.setFont("Helvetica", "normal");
+  //   pdf.setFontSize(12);
+  //   const vehicleData = [
+  //     `Marca: ${watch("marca") || "-"}`,
+  //     `Modelo: ${watch("modelo") || "-"}`,
+  //     `Ano: ${watch("ano") || "-"}`,
+  //     `Motor: ${watch("motor") || "-"}`,
+  //     `Placa: ${watch("placa") || "-"}`,
+  //   ];
+  //   vehicleData.forEach((line) => {
+  //     pdf.text(line, margin, currentY);
+  //     currentY += 6;
+  //   });
+  //   pdf.line(margin, currentY, pageWidth - margin, currentY);
+  //   currentY += 10;
 
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(14);
-    pdf.text("Dados do Veículo", margin, currentY);
-    currentY += 8;
-    pdf.setFont("Helvetica", "normal");
-    pdf.setFontSize(12);
-    const vehicleData = [
-      `Marca: ${watch("marca") || "-"}`,
-      `Modelo: ${watch("modelo") || "-"}`,
-      `Ano: ${watch("ano") || "-"}`,
-      `Motor: ${watch("motor") || "-"}`,
-      `Placa: ${watch("placa") || "-"}`,
-    ];
-    vehicleData.forEach((line) => {
-      pdf.text(line, margin, currentY);
-      currentY += 6;
-    });
-    pdf.line(margin, currentY, pageWidth - margin, currentY);
-    currentY += 10;
+  //   // Filtra as linhas que foram adicionadas (adicionado === true)
+  //   const pecasAdicionadas = watch("pecasServicos").filter(
+  //     (item) => item.adicionado === true
+  //   );
+  //   if (pecasAdicionadas.length > 0) {
+  //     pdf.setFont("Helvetica", "bold");
+  //     pdf.setFontSize(14);
+  //     pdf.text("Produtos/Serviços", margin, currentY);
+  //     currentY += 6;
+  //     pdf.setFont("Helvetica", "normal");
 
-    // Filtra as linhas que foram adicionadas (adicionado === true)
-    const pecasAdicionadas = watch("pecasServicos").filter(
-      (item) => item.adicionado === true
-    );
-    if (pecasAdicionadas.length > 0) {
-      pdf.setFont("Helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text("Produtos/Serviços", margin, currentY);
-      currentY += 6;
-      pdf.setFont("Helvetica", "normal");
+  //     autoTable(pdf, {
+  //       startY: currentY,
+  //       head: [["Qtde", "Código", "Descrição", "Valor Unitário", "Total"]],
+  //       body: pecasAdicionadas.map((item) => [
+  //         item.qtde,
+  //         item.cod || "-",
+  //         item.descricao,
+  //         `R$ ${Number(item.valorUnit).toFixed(2)}`,
+  //         `R$ ${Number(item.total).toFixed(2)}`,
+  //       ]),
+  //       theme: "grid",
+  //       styles: { fontSize: 10, cellPadding: 3 },
+  //       headStyles: {
+  //         fillColor: [41, 128, 185],
+  //         textColor: [255, 255, 255],
+  //         halign: "center",
+  //       },
+  //       bodyStyles: { halign: "center" },
+  //       margin: { left: margin },
+  //     });
+  //     // Atualiza a posição com base na tabela
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     currentY = (pdf as any).lastAutoTable.finalY + 10;
+  //   }
 
-      autoTable(pdf, {
-        startY: currentY,
-        head: [["Qtde", "Código", "Descrição", "Valor Unitário", "Total"]],
-        body: pecasAdicionadas.map((item) => [
-          item.qtde,
-          item.cod || "-",
-          item.descricao,
-          `R$ ${Number(item.valorUnit).toFixed(2)}`,
-          `R$ ${Number(item.total).toFixed(2)}`,
-        ]),
-        theme: "grid",
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: {
-          fillColor: [41, 128, 185],
-          textColor: [255, 255, 255],
-          halign: "center",
-        },
-        bodyStyles: { halign: "center" },
-        margin: { left: margin },
-      });
-      // Atualiza a posição com base na tabela
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      currentY = (pdf as any).lastAutoTable.finalY + 10;
-    }
+  //   // Total Geral com destaque (soma apenas as linhas adicionadas)
+  //   const totalPDF = pecasAdicionadas.reduce(
+  //     (acc, item) => acc + Number(item.total || 0),
+  //     0
+  //   );
+  //   pdf.setFillColor(230, 230, 230);
+  //   pdf.rect(margin, currentY, pageWidth - margin * 2, 10, "F");
+  //   pdf.setFont("Helvetica", "bold");
+  //   pdf.setFontSize(16);
+  //   pdf.text(`Total: R$ ${totalPDF.toFixed(2)}`, margin + 2, currentY + 7);
 
-    // Total Geral com destaque (soma apenas as linhas adicionadas)
-    const totalPDF = pecasAdicionadas.reduce(
-      (acc, item) => acc + Number(item.total || 0),
-      0
-    );
-    pdf.setFillColor(230, 230, 230);
-    pdf.rect(margin, currentY, pageWidth - margin * 2, 10, "F");
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text(`Total: R$ ${totalPDF.toFixed(2)}`, margin + 2, currentY + 7);
-
-    pdf.save(
-      `ordem-servico-para-${watch("nome").replace(" ", "-").toLowerCase()}-${watch("modelo")}-${watch("placa")}.pdf`
-    );
-  };
+  //   pdf.save(
+  //     `ordem-servico-para-${watch("nome").replace(" ", "-").toLowerCase()}-${watch("modelo")}-${watch("placa")}.pdf`
+  //   );
+  // };
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -566,6 +566,15 @@ export const OrdemServico = () => {
                 type="text"
                 placeholder="Nome"
                 id="nome"
+              />
+            </div>
+            <div className="input-group" style={{ width: "30%" }}>
+              <label htmlFor="celular">Celular/Telefone:</label>
+              <input
+                {...register("celular")}
+                type="text"
+                placeholder="(00) 00000-0000"
+                id="celular"
               />
             </div>
             <div className="input-group" style={{ width: "25%" }}>
